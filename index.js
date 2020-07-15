@@ -38,15 +38,21 @@ performRefresh()
 setInterval(performRefresh, process.env.REFRESH_PERIOD);
 
 function performRefresh() {
-    console.log("reading "+process.env.FEED_ENDPOINT)
+    console.log("Reading "+process.env.FEED_ENDPOINT)
     reader.performRead()
+        //each feed event should be a trust event
         .then((events) => {
-            parser.performParse(events[0])
-            .then((incidents) => {
-                for (let index = incidents.length-1; index >= 0; index--) {
-                    const element = incidents[index];
-                    serviceMonitor.reportIncident(element)
-                }
+            events.forEach(eventElement => {
+                //read the link and try to parse to an incident model from JSON
+                //TODO handle incidents where the event is not in JSON
+                parser.performParse(eventElement)
+                .then((incident) => {
+                    if(incident != null){
+                        const element = incident;
+                        serviceMonitor.reportIncident(element)
+                    }
+                });
             });
+            
         })
 }
